@@ -1,0 +1,50 @@
+import pandas as pd
+teams = pd.read_csv("teams.csv")
+
+teams = teams[["team", "country", "year", "athletes", "age", "prev_medals", "medals"]]
+teams.corr(numeric_only=True)["medals"]
+
+teams = teams.dropna()
+
+train = teams[teams["year"] < 2012].copy()
+test = teams[teams["year"] >=2012].copy()
+
+train_x = np.column_stack((train["athletes"], train["prev_medals"]))
+test_x = np.column_stack((test["athletes"], test["prev_medals"]))
+
+y = np.array(train["medals"])
+test_y = np.array(test["medals"])
+
+model = keras.Sequential([keras.layers.Dense(1, input_shape=(2,))])
+model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+
+model.fit(train_x, y, epochs=200)
+predictions = model.predict(test_x)
+test["predictions"] = predictions
+test
+
+test[test["team"] == "USA"]
+test[test["team"] == "IND"]
+
+errors = (test["medals"] - test["predictions"]).abs()
+errors
+error_by_team = errors.groupby(test["team"]).mean()
+error_by_team
+
+medals_by_team = test["medals"].groupby(test["team"]).mean()
+medals_by_team
+
+error_ratio = error_by_team/medals_by_team
+error_ratio[~pd.isnull(error_ratio)]
+error_ratio = error_ratio[np.isfinite(error_ratio)]
+error_ratio
+error_ratio.plot.hist()
+
+
+
+
+
+
+
+
+
